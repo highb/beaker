@@ -184,14 +184,10 @@ module Beaker
       it 'raises RebootFailure if new uptime is never less than old uptime' do
         # bypass shutdown command itself
         allow( instance ).to receive( :exec ).with(:shutdown_command_stub, anything).and_return(response)
+        # allow the second uptime and the hash arguments in exec
+        allow( instance ).to receive( :exec ).with(:uptime_command_stub, anything).and_return(response)
 
-        # verify we've made it to the after-reboot loop (also avoid its wait behavior, skip to yielding)
-        expect(instance).to receive(:repeat_for_and_wait).and_yield
-        # verify the block is run exactly once here (will have a previous run from first uptime check)
-        expect(instance).to receive(:parse_uptime).exactly(2).times
-        expect(instance).to receive(:uptime_int).exactly(2).times.and_return(173)
-        # verify the 'time window' RebootFailure is thrown & thus the block `done` value was never true
-        expect { instance.reboot }.to raise_error(Beaker::Host::RebootFailure, /in allowed time window/)
+        expect { instance.reboot }.to raise_error(Beaker::Host::RebootFailure, /Uptime did not reset/)
       end
     end
 
